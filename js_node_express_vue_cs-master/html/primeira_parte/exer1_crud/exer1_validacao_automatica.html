@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crud Mapa</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../css/estilos.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
+    <script src="https://unpkg.com/vuelidate@0.7.4/dist/vuelidate.min.js"></script>
+    <script src="https://unpkg.com/vuelidate@0.7.4/dist/validators.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+
+</head>
+<body>
+    <div id="app" class="container">                
+        <h2>Listagem de Mapas CS</h2>   
+
+        <table class="table table-striped">
+            <tr>
+                <th scope="col">Código</th>
+                <th scope="col">Nome</th> 
+                <th scope="col">Data de Cadastro</th>
+                <th scope="col">Modo</th> 
+                <th scope="col">Situação</th>                 
+                <th scope="col">Alterar</th>
+                <th scope="col">Remover</th>
+            </tr>                     
+            <tbody>
+                <tr v-for="(m, indice) in mapas">                                                
+                        <td>{{indice}}</td>
+                        <td>{{m.nome}}</td>
+                        <td>{{m.data_cadastro | formataData}}</td>
+                        <td>{{m.modo.descricao}}</td>
+                        
+                        <td v-if="m.situacao"><input type="checkbox" checked disabled></td>
+                        <td v-if="!m.situacao"><input type="checkbox" disabled></td>
+                        <td><button v-on:click="editMapa(indice)" class="btn" type="button">Alterar</button></td>
+                        <td><button v-on:click="removeMapa(indice)" class="btn" type="button">Remover</button></td>
+                </tr>
+            </tbody>
+        </table>
+        <form id="formulario">  
+            
+            <!-- passo 2-->
+
+            <h3>Formulário para cadastrar novo mapas</h3>
+                <div class="form-group">
+                    <label for="inputIndice">Codigo:</label>
+                    <input type="text" v-model="form_mapas.indice" class="form-control" id="inputIndice" disabled>
+                </div>
+                <div class="error" v-if="!$v.form_mapas.nome.required">Nome deve ter no mínimo {{$v.form_mapas.nome.$params.minLength.min}} caracteres.</div>
+                <div class="form-group">
+                    <label class="form__label" for="inputNome">Nome:</label>
+                    <input class="form__label" type="text" v-model.trim="$v.form_mapas.nome.$model" :class="status($v.form_mapas.nome)" id="inputNome">>
+                </div>
+                <div class="error" v-if="!$v.form_mapas.data_cadastro.minValue">Informe uma data válida (anterior a data atual).</div>
+                <div class="form-group">
+                    <label class="form__label" for="inputDtNasc">Data Cadastro:</label>
+                    <input class="form__label" type="date" v-model="$v.form_mapas.data_cadastro.$model" :class="status($v.form_mapas.data_cadastro)" id="inputDtCadastro"><!--Atividade 2 - Aplicar um input/calendario mais apropriado. -->
+                </div>
+                <!--<div class="form-group">
+                    <label for="inputQtdEstrela">Quantidade de Estrelas:</label>
+                    <input type="text" @input="checknum" minlength="1" maxlength="4" v-model="form_jogador.qtd_estrela" class="form-control" id="inputQtdEstrela">
+                </div> -->
+                <!-- https://br.vuejs.org/v2/guide/forms.html -->
+                <div class="error" v-if="!$v.form_mapas.modo.required">Selecione uma opção.</div>
+                <div class="form-group">
+                    <label class="form__label" for="selectModo">Modo:</label>
+                    <select class="form__input" v-model="$v.form_mapas.modo.$model" :class="status($v.form_mapas.modo)" id="selectModo">
+                        <option disabled value="">Escolha um item</option>
+                        <option v-for="p in modo" v-bind:value="p">
+                            {{ p.descricao }}
+                          </option>
+                    </select>
+                </div>
+                <!-- https://getbootstrap.com/docs/4.0/components/forms/ -->
+                <div class="form-group">
+                    <label for="checkSituacao">Situação:</label>
+                    <input type="checkbox" v-model="form_mapas.situacao"  id="checkSituacao"><!--Atividade 1 - Aplicar um input mais apropriado. -->
+                </div>
+                <!--
+                    <div class="form-group">
+                    <label for="inputSenha">Senha:</label>
+                    <input type="password" minlength="4" maxlength="4" v-model="form_jogador.senha" class="form-control" id="inputSenha" placeholder="Senha" required>
+                </div> 
+                -->
+                
+                <button @click="addMapas($v)" class="btn btn-primary" type="button">Salvar</button>
+                <button @click="cleanFormulario" class="btn btn-primary" type="button">Limpar</button>
+                
+                </div>                                                                            
+        </form>        
+
+        <!--Feito Até AQUI 
+        OBS: fazer a validação dos campos como o professor deseja-->
+        <!--copiado até a linha 83 do arquivo mask do professor.-->
+    </div>
+</body>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+
+        var dados = {
+
+            modo: [{codigo: 1, descricao: 'Terroristas'},{codigo: 2, descricao: 'ContaTerroristas'}],
+
+            mapas:  [ {nome: 'Dust II', data_cadastro: '2020-09-07', situacao: true, modo: {} }],
+
+            form_mapas: {codigo: '', nome: '', data_cadastro: '', situacao: true, modo: '' },
+
+            //passo 1
+
+        };
+
+        Vue.use(window.vuelidate.default);
+
+        const {
+            required,
+            minLength,
+            minValue,
+            between
+        } = window.validators
+
+        Vue.filter('formataData', function (value) {                
+                //yyyy-mm-dd
+                var data = new Date(value);
+                data.setDate(data.getDate()+1); //incrementa a data em um dia para mostrar corretamente (pode nao ser necessário)              
+                dia  = (data.getDate()).toString().padStart(2, '0'),
+                mes  = (data.getMonth()+1).toString().padStart(2, '0'), //+1 pois no getMonth Janeiro começa com zero.                
+                ano  = data.getFullYear();                
+                return dia+"/"+mes+"/"+ano;                
+        });
+        
+
+        //Feito até a linha 105 
+        new Vue({ 
+                el: '#app', 
+                data: dados,
+                validations: {
+                    form_mapas: {
+                        nome: {
+                            required, 
+                            minLength: minLength(5)
+                        },
+                        data_cadastro: {
+                            required,                                        
+                            minValue: value => value < new Date().toISOString()
+                        },          
+                        modo: {
+                            required
+                        },
+                    } 
+                },
+                methods: {
+
+                    //https://br.vuejs.org/v2/cookbook/form-validation.html  
+                    // validação de formulários “Automática”, 
+                    //passo 3
+                    isLetter(e) {
+                        let char = String.fromCharCode(e.keyCode); // Get the character
+                        if(/^[A-Za-z]+$/.test(char)) 
+                            return true; // Match with regex 
+                        else 
+                            e.preventDefault(); // If not match, don't add to input text
+                    },
+
+                    status(validation) {
+                        return {
+                            error: validation.$error,
+                            dirty: validation.$dirty
+                        }
+                    },
+
+                    addMapas: function (v) {
+                        var input_codigo = this.form_mapas.indice;  
+                        var input_nome = this.form_mapas.nome.trim(); 
+                        var input_data_cadastro = this.form_mapas.data_cadastro.trim();                     
+                        var input_situacao = this.form_mapas.situacao;
+                        var select_modo = this.form_mapas.modo;
+                        //var select_endereco = this.novo_jogador.endereco;
+
+                        if (!v.$invalid) {
+                            
+                            //documentação sobre o parseInt
+                            //https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/parseInt
+                            if(isNaN(parseInt(input_codigo))){
+
+                                this.mapas.push({
+                                    nome: input_nome, 
+                                    data_cadastro: input_data_cadastro, 
+                                    situacao: input_situacao, 
+                                    modo: select_modo
+                                });
+                                alert('Novo mapa cadastrado !');
+
+                            }else{
+
+                                this.mapas[input_codigo] = {
+                                    nome: input_nome, 
+                                    data_cadastro: input_data_cadastro, 
+                                    situacao: input_situacao, 
+                                    modo: select_modo
+                                };
+
+                                alert('Mapa alterado !');
+                            }
+                            this.cleanFormulario();
+                        }else{
+                            alert("Atenção !! Formulário incompleto.");
+                        }
+                    },
+
+                    editMapa: function (param_index) {
+                        this.form_mapas.indice = param_index;
+                        this.form_mapas.nome = this.mapas[param_index].nome; 
+                        this.form_mapas.data_cadastro = this.mapas[param_index].data_cadastro;
+                        this.form_mapas.situacao = this.mapas[param_index].situacao
+                        this.form_mapas.modo = this.mapas[param_index].modo;
+                    },
+
+                    removeMapa: function(param_index){
+                        // Atividade 4 - Confirmar antes de remover
+                        // documentacao sobre o confirm
+                        //https://www.w3schools.com/jsref/met_win_confirm.asp
+                        var r = confirm("Deseja realmente remover?");
+                        if(r == true){
+
+                            //documentacao sobre o splice
+                            //https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Array/splice
+                            //remove 1 elemento do índice definido pela variavel param_index
+                            this.mapas.splice(param_index, 1);
+
+                            alert('Removeu o mapa: ' + param_index);
+                        }else{
+                            alert('O Mapa: ' + this.mapas[param_index].nome + " não foi removido.");
+                        }
+                    },
+
+                    cleanFormulario: function() {
+                        this.form_mapas.indice = '';
+                        this.form_mapas.nome = ''; 
+                        this.form_mapas.data_cadastro = '';
+                        this.form_mapas.situacao = false;
+                        this.form_mapas.modo = '';
+                    },
+                }
+                
+        });             
+    });
+
+</script>
+<!--
+    Pedir para o professor:
+     - v-model: como funciona:
+     - filtro da data.
+     - pedir oq ele quiz dizer com o param Index
+
+-->
+
+</html>

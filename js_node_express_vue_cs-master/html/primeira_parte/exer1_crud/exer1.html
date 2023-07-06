@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crud Mapa</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.8/vue.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+
+</head>
+<body>
+    <div id="app" class="container">               
+        <h2>Listagem de Jogadores do CS</h2>   
+
+        <table class="table table-striped">
+            <tr>
+                <th scope="col">Código</th>
+                <th scope="col">Nome</th> 
+                <th scope="col">Data de Cadastro</th>
+                <th scope="col">Modo</th> 
+                <th scope="col">Situação</th>                 
+                <th scope="col">Alterar</th>
+                <th scope="col">Remover</th>
+            </tr>                     
+            <tbody>
+                <tr v-for="(m, indice) in mapas">                                                
+                        <td>{{m.codigo}}</td>
+                        <td>{{m.nome}}</td>
+                        <td>{{m.data_cadastro | formataData}}</td>
+                        <td>{{m.modo}}</td>
+                        
+                        <td v-if="m.situacao"><input type="checkbox" checked disabled></td>
+                        <td v-if="!m.situacao"><input type="checkbox" disabled></td>
+                        <td><button v-on:click="editMapa(indice)" class="btn" type="button">Alterar</button></td>
+                        <td><button v-on:click="removeMapa(indice)" class="btn" type="button">Remover</button></td>
+                </tr>
+            </tbody>
+        </table>
+        <form id="formulario">                        
+            <h3>Formulário para cadastrar novo mapas</h3>
+                <div class="form-group">
+                    <label for="inputIndice">Codigo:</label>
+                    <input type="text" v-model="form_mapas.indice" class="form-control" id="inputIndice" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="inputNome">Nome:</label>
+                    <input type="text" @input="checkletra" minlength="1" maxlength="50" v-model="form_mapas.nome" class="form-control" id="inputNome">
+                </div>
+                <div class="form-group">
+                    <label for="inputDtNasc">Data Cadastro:</label>
+                    <input type="date" v-model="form_mapas.data_cadastro" class="form-control" id="inputDtCadastro"><!--Atividade 2 - Aplicar um input/calendario mais apropriado. -->
+                </div>
+                <!--<div class="form-group">
+                    <label for="inputQtdEstrela">Quantidade de Estrelas:</label>
+                    <input type="text" @input="checknum" minlength="1" maxlength="4" v-model="form_jogador.qtd_estrela" class="form-control" id="inputQtdEstrela">
+                </div> -->
+                <!-- https://br.vuejs.org/v2/guide/forms.html -->
+                <div class="form-group">
+                    <label for="selectModo">Modo:</label>
+                    <select v-model="form_mapas.modo" class="form-control" id="selectModo">
+                        <option disabled value="">Escolha um item</option>
+                        <option v-for="p in modo" v-bind:value="p">
+                            {{ p.descricao }}
+                          </option>
+                    </select>
+                </div>
+                <!-- https://getbootstrap.com/docs/4.0/components/forms/ -->
+                <div class="form-group">
+                    <label for="checkSituacao">Situação:</label>
+                    <input type="checkbox" v-model="form_mapas.situacao" class="form-check-label" id="checkSituacao"><!--Atividade 1 - Aplicar um input mais apropriado. -->
+                </div>
+                <!--
+                    <div class="form-group">
+                    <label for="inputSenha">Senha:</label>
+                    <input type="password" minlength="4" maxlength="4" v-model="form_jogador.senha" class="form-control" id="inputSenha" placeholder="Senha" required>
+                </div> 
+                -->
+                
+                <button @click="addMapas" class="btn btn-primary" type="button">Salvar</button>
+                <button @click="cleanFormulario" class="btn btn-primary" type="button">Limpar</button>
+                
+                </div>                                                                            
+        </form>        
+
+        <!--Feito Até AQUI 
+        OBS: fazer a validação dos campos como o professor deseja-->
+        <!--copiado até a linha 83 do arquivo mask do professor.-->
+    </div>
+</body>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+
+        var dados = {
+
+            modo: [{codigo: 1, descricao: 'Terroristas'},{codigo: 2, descricao: 'ContaTerroristas'}],
+
+            mapas:  [ {nome: 'Dust II', data_cadastro: '2020-09-07', situacao: true, modo: {} }],
+
+            form_mapas: {codigo: '', nome: '', data_cadastro: '', situacao: true, modo: '' }
+
+        };
+
+        Vue.filter('formataData', function (value) {                
+                //yyyy-mm-dd
+                var data = new Date(value);
+                data.setDate(data.getDate()+1); //incrementa a data em um dia para mostrar corretamente (pode nao ser necessário)              
+                dia  = (data.getDate()).toString().padStart(2, '0'),
+                mes  = (data.getMonth()+1).toString().padStart(2, '0'), //+1 pois no getMonth Janeiro começa com zero.                
+                ano  = data.getFullYear();                
+                return dia+"/"+mes+"/"+ano;                
+        });
+        
+
+        //Feito até a linha 105 
+        new Vue({ 
+                el: '#app', 
+                data: dados,
+                methods: { 
+
+                    addMapas: function () {
+                        var input_codigo = this.form_mapas.codigo;  
+                        var input_nome = this.form_mapas.nome.trim(); 
+                        var input_data_cadastro = this.form_mapas.data_cadastro.trim();                     
+                        var input_situacao = this.form_mapas.situacao;
+                        var select_modo = this.form_mapas.modo;
+                        //var select_endereco = this.novo_jogador.endereco;
+
+                        if (input_nome.length <= 50 &&  input_data_cadastro && select_modo !== undefined ) {
+                            
+                            //documentação sobre o parseInt
+                            //https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/parseInt
+                            if(isNaN(parseInt(input_codigo))){
+
+                                this.mapas.push({
+                                    nome: input_nome, 
+                                    data_cadastro: input_data_cadastro, 
+                                    situacao: input_situacao, 
+                                    modo: select_modo
+                                });
+                                alert('Novo mapa cadastrado !');
+
+                            }else{
+
+                                this.mapas[input_codigo] = {
+                                    nome: input_nome, 
+                                    data_cadastro: input_data_cadastro, 
+                                    situacao: input_situacao, 
+                                    modo: select_modo
+                                };
+
+                                alert('Mapa alterado !');
+                            }
+                            this.cleanFormulario();
+
+                        }else{
+
+                            alert("Preencha nome, data de cadastro e o modo !!!");
+                        }
+                    },
+
+                    editMapa: function (param_index) {
+                        this.form_mapas.codigo = param_index;
+                        this.form_mapas.nome = this.mapas[param_index].nome; 
+                        this.form_mapas.data_cadastro = this.mapas[param_index].data_cadastro;
+                        this.form_mapas.modo = this.mapas[param_index].modo;
+                    },
+
+                    removeMapa: function(param_index){
+                        // Atividade 4 - Confirmar antes de remover
+                        // documentacao sobre o confirm
+                        //https://www.w3schools.com/jsref/met_win_confirm.asp
+                        var r = confirm("Deseja realmente remover?");
+                        if(r){
+
+                            //documentacao sobre o splice
+                            //https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Array/splice
+                            //remove 1 elemento do índice definido pela variavel param_index
+                            this.mapas.splice(param_index, 1);
+
+                            alert('Removeu o mapas: ' + param_index);
+                        }
+                    },
+
+                    cleanFormulario: function() {
+                        this.form_mapas.codigo = '';
+                        this.form_mapas.nome = ''; 
+                        this.form_mapas.data_cadastro = '';
+                        this.form_mapas.situacao = false;
+                        this.form_mapas.modo = '';
+                    },
+
+                    checkletra: function (event) {
+                        this.form_mapas.nome 
+                        = this.form_mapas.nome.replace(/[^a-z]/g, '');
+                    }
+                },
+                created : function () {
+                    this.cleanFormulario();
+                }
+            });             
+    });
+
+</script>
+<!--
+    Pedir para o professor:
+     - v-model: como funciona:
+     - filtro da data.
+     - pedir oq ele quiz dizer com o param Index
+
+-->
+
+</html>
